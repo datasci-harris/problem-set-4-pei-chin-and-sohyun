@@ -26,12 +26,100 @@ include-before-body:
 ## Download and explore the Provider of Services (POS) file (10 pts)
 
 1. 
+For this exercise, I reviewed the problem set and data dictionary to determine the essential variables needed 
+from the `Provider of Services (POS)` dataset. Since we are focused on analyzing short-term hospitals, 
+the selected variables include:
+
+- **Provider Category Code (PRVDR_CTGRY_CD)**: Identifies the main category of the provider (e.g., hospital).
+- **Provider Category Subtype Code (PRVDR_CTGRY_SBTYP_CD)**: Further categorizes providers, with code "01" used to filter short-term hospitals.
+- **State Code (STATE_CD)**: Provides the state in which the provider is located, enabling regional analysis.
+- **County Code (SSA_CNTY_CD)**: Indicates the county, for more detailed geographic filtering if needed.
+- **Provider Number (PRVDR_NUM)**: A unique identification number for each provider, which allows for individual tracking.
+- **Certification Date (CRTFCTN_DT)**: Records the date of certification, which could be used for analysis based on the certification timeline.
+- **Termination Code (PGM_TRMNTN_CD)**: Shows whether the provider is still active, helping exclude terminated providers if necessary.
+- **Facility Name (FAC_NAME)**: The name of the hospital, useful for identification.
+- **City Name (CITY_NAME)**: The city where the provider is located, allowing for finer geographical analysis.
+
 2. 
+
+```{python}
+import pandas as pd
+file_path = r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2016.csv.csv"
+data = pd.read_csv(file_path)
+
+```
     a.
+    ```{python}
+    # Filter for short-term hospitals with provider category code (PRVDR_CTGRY_CD) = 1 and subtype code (PRVDR_CTGRY_SBTYP_CD) = 1
+      short_term_hospitals = data[(data['PRVDR_CTGRY_CD'] == 1) & (data['PRVDR_CTGRY_SBTYP_CD'] == 1)]
+    # Count the number of short-term hospitals
+    hospital_count = short_term_hospitals.shape[0]
+    print("Number of short-term hospitals:", hospital_count)
+    # Check the number of short-term hospitals
+    hospital_count = short_term_hospitals.shape[0]
+    print("Number of short-term hospitals:", hospital_count)
+    ```
     b.
-3. 
-4. 
+    ##Based on my analysis, I identified **7,245** short-term hospitals in the 2016 dataset, using `provider 
+    ##type code = 01` and `subtype code = 01`. This count is notably higher than external estimates, 
+    ##which report approximately **4,862** short-term acute care hospitals in 2016.
+
+    ##The discrepancy may be due to differences in dataset definitions or the inclusion of additional facility 
+    ##types in the `pos2016.csv` file. Further examination is required to align the dataset criteria with 
+    ##standard definitions used in external sources.
+
+    ##Reference:
+    ##- Agency for Healthcare Research and Quality (AHRQ)
+
+
+3.
     a.
+    ```{python}
+    import pandas as pd
+import matplotlib.pyplot as plt
+
+# Update file paths to your specified location
+file_paths = {
+    '2016': r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2016.csv",
+    '2017': r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2017.csv",
+    '2018': r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2018.csv",
+    '2019': r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2019.csv"
+}
+
+# Dictionary to store yearly data
+data = {}
+
+for year, file_path in file_paths.items():
+    df = pd.read_csv(file_path)
+    # Filter for short-term hospitals: provider type code = 1 and subtype code = 1
+    df_filtered = df[(df['PRVDR_CTGRY_CD'] == 1) & (df['PRVDR_CTGRY_SBTYP_CD'] == 1)]
+    df_filtered['Year'] = year  # Add year column
+    data[year] = df_filtered
+
+# Append all years into one DataFrame
+all_data = pd.concat(data.values())
+
+# Step 3: Plot number of observations per year
+observations_per_year = all_data['Year'].value_counts().sort_index()
+observations_per_year.plot(kind='bar', title="Number of Observations per Year")
+plt.xlabel("Year")
+plt.ylabel("Number of Observations")
+plt.show()
+
+# Step 4a: Plot number of unique hospitals per year
+unique_hospitals_per_year = all_data.groupby('Year')['CRTFTCN_FAC_ID'].nunique()
+unique_hospitals_per_year.plot(kind='bar', title="Number of Unique Hospitals per Year")
+plt.xlabel("Year")
+plt.ylabel("Number of Unique Hospitals")
+plt.show()
+
+# Step 4b: Analyze the structure of the data
+print("Observations per year:", observations_per_year.to_dict())
+print("Unique hospitals per year:", unique_hospitals_per_year.to_dict())
+
+
+    ```
+
     b.
 
 ## Identify hospital closures in POS file (15 pts) (*)
