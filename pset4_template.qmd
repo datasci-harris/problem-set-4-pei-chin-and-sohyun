@@ -57,6 +57,7 @@ the selected variables include:
 - **Termination Code (PGM_TRMNTN_CD)**: Shows whether the provider is still active, helping exclude terminated providers if necessary.
 - **Facility Name (FAC_NAME)**: The name of the hospital, useful for identification.
 - **City Name (CITY_NAME)**: The city where the provider is located, allowing for finer geographical analysis.
+- **Zip code (CITY_NAME)**:ZIP Code (ZIP_CD): The five-digit ZIP code representing the provider's physical location, useful for precise regional analysis and mapping.
 
 2. 
 
@@ -140,13 +141,16 @@ if data:
     plt.xlabel('Year')
     plt.ylabel('Number of Observations')
     plt.show()
-4
+```
+4.
+```{python}
     # Question 4(a): Plot the number of unique hospitals by year (using 'PRVDR_NUM' as a unique identifier)
     unique_hospitals_by_year = all_data.groupby('Year')['PRVDR_NUM'].nunique()
     unique_hospitals_by_year.plot(kind='bar', color='orange', title="Number of Unique Hospitals by Year")
     plt.xlabel('Year')
     plt.ylabel('Number of Unique Hospitals')
     plt.show()
+
 ```
 
 ```{python}
@@ -165,8 +169,6 @@ if data:
         print("Some hospitals appear multiple times per year. Below are the details:")
         print(duplicates)
 
-else:
-    print("No data loaded. Please check file paths and file contents.")
 ```
 
 ## Identify hospital closures in POS file (15 pts) (*)
@@ -181,9 +183,52 @@ else:
 ## Download Census zip code shapefile (10 pt) 
 
 1. 
-    a.
-    b. 
+    a.The five file types found in the downloaded dataset are .shp, .shx, .dbf, .prj, and .xml. Each 
+    type serves a specific purpose: .shp stores the geometrical shapes of geographical features, .shx acts 
+    as an index file for faster access, .dbf contains attribute data related to each feature, .prj defines 
+    the projection and coordinate system, and .xml holds metadata describing the dataset.
+
+    b.After unzipping the file, the sizes of each file type are as follows: the .shp file is approximately 
+    514 MB, the .dbf file is about 6 MB, the .shx file is 259 KB, the .prj file is 1 KB, and the .xml file 
+    is 16 KB. This indicates that the .shp file holds the most data as it stores the detailed geometrical 
+    information of geographical features.
 2. 
+
+```{python}
+import geopandas as gpd
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Load the ZIP code shapefile
+shapefile_path = r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\gz_2010_us_860_00_500k\gz_2010_us_860_00_500k.shp"
+zip_gdf = gpd.read_file(shapefile_path)
+
+# Filter for Texas ZIP codes (starting with '75' or '77')
+texas_zip_gdf = zip_gdf[zip_gdf['ZCTA5'].astype(str).str.startswith(('75', '77'))]
+
+# Load the cleaned POS hospital data for 2016
+pos_data_path = r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2016.csv.csv"
+pos_df = pd.read_csv(pos_data_path, dtype={'ZIP_CD': str}, low_memory=False)
+
+# Filter POS data for Texas ZIP codes (using ZIP_CD)
+texas_pos_df = pos_df[pos_df['ZIP_CD'].astype(str).str.startswith(('75', '77'))]
+
+# Calculate the number of hospitals per ZIP code in Texas
+hospital_counts = texas_pos_df['ZIP_CD'].value_counts().reset_index()
+hospital_counts.columns = ['ZIP_CD', 'Hospital_Count']
+
+# Merge with Texas ZIP shapefile data
+texas_zip_gdf = texas_zip_gdf.merge(hospital_counts, left_on='ZCTA5', right_on='ZIP_CD', how='left').fillna(0)
+
+# Plot choropleth of the number of hospitals by ZIP code in Texas
+fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+texas_zip_gdf.plot(column='Hospital_Count', cmap='OrRd', linewidth=0.8, ax=ax, edgecolor='0.8', legend=True)
+plt.title("Number of Hospitals by ZIP Code in Texas (2016)")
+plt.xlabel("Longitude")
+plt.ylabel("Latitude")
+plt.show()
+```
+
 
 ## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
 
