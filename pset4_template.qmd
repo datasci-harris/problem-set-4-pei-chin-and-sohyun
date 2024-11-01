@@ -28,7 +28,7 @@ Please refer to the minilesson on code style
 1. This problem set is a paired problem set.
 2. Play paper, scissors, rock to determine who goes first. Call that person *Partner 1*.
     - Partner 1 (name and cnet ID):
-    - Partner 2 (name and cnet ID):
+    - Partner 2 (name and cnet ID): Sohyun Lim / shlim
 3. Partner 1 will accept the `ps4` and then share the link it creates with their partner. You can only share it with one partner so you will not be able to change it after your partner has accepted. 
 4. "This submission is our work alone and complies with the 30538 integrity policy." Add your initials to indicate your agreement: \*\*\_\_\*\* \*\*\_\_\*\*
 5. "I have uploaded the names of anyone else other than my partner and I worked with on the problem set **[here](https://docs.google.com/forms/d/185usrCREQaUbvAXpWhChkjghdGgmAZXA3lPWpXLLsts/edit)**"  (1 point)
@@ -57,28 +57,29 @@ the selected variables include:
 - **Termination Code (PGM_TRMNTN_CD)**: Shows whether the provider is still active, helping exclude terminated providers if necessary.
 - **Facility Name (FAC_NAME)**: The name of the hospital, useful for identification.
 - **City Name (CITY_NAME)**: The city where the provider is located, allowing for finer geographical analysis.
-- **Zip code (CITY_NAME)**:ZIP Code (ZIP_CD): The five-digit ZIP code representing the provider's physical location, useful for precise regional analysis and mapping.
+- **Zip code (ZIP_CD)**:ZIP Code (ZIP_CD): The five-digit ZIP code representing the provider's physical location, useful for precise regional analysis and mapping.
 
 2. 
 
 ```{python}
 import pandas as pd
-file_path = r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2016.csv.csv"
+file_path = r"/Users/sohyunlim/Desktop/python-ps4-shilm/pos2016.csv.csv"
 data = pd.read_csv(file_path)
 
 ```
     a.
-    ```{python}
+```{python}
     # Filter for short-term hospitals with provider category code (PRVDR_CTGRY_CD) = 1 and subtype code (PRVDR_CTGRY_SBTYP_CD) = 1
-      short_term_hospitals = data[(data['PRVDR_CTGRY_CD'] == 1) & (data['PRVDR_CTGRY_SBTYP_CD'] == 1)]
+short_term_hospitals = data[(data['PRVDR_CTGRY_CD'] == 1) & (data['PRVDR_CTGRY_SBTYP_CD'] == 1)]
     # Count the number of short-term hospitals
-    hospital_count = short_term_hospitals.shape[0]
-    print("Number of short-term hospitals:", hospital_count)
+hospital_count = short_term_hospitals.shape[0]
+print("Number of short-term hospitals:", hospital_count)
     # Check the number of short-term hospitals
-    hospital_count = short_term_hospitals.shape[0]
-    print("Number of short-term hospitals:", hospital_count)
-    ```
+hospital_count = short_term_hospitals.shape[0]
+print("Number of short-term hospitals:", hospital_count)
+```
     b.
+
     ##Based on my analysis, I identified **7,245** short-term hospitals in the 2016 dataset, using `provider 
     ##type code = 01` and `subtype code = 01`. This count is notably higher than external estimates, 
     ##which report approximately **4,862** short-term acute care hospitals in 2016.
@@ -99,10 +100,10 @@ import os
 
 # Define file paths for each year
 file_paths = {
-    '2016': r'C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2016.csv.csv',
-    '2017': r'C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2017.csv.csv',
-    '2018': r'C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2018.csv.csv',
-    '2019': r'C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2019.csv.csv'
+    '2016': r'/Users/sohyunlim/Desktop/python-ps4-shilm/pos2016.csv.csv',
+    '2017': r'/Users/sohyunlim/Desktop/python-ps4-shilm/pos2017.csv.csv',
+    '2018': r'/Users/sohyunlim/Desktop/python-ps4-shilm/pos2018.csv.csv',
+    '2019': r'/Users/sohyunlim/Desktop/python-ps4-shilm/pos2019.csv.csv'
 }
 
 # Dictionary to store filtered data for each year
@@ -142,7 +143,7 @@ if data:
     plt.ylabel('Number of Observations')
     plt.show()
 ```
-4.
+4
 ```{python}
     # Question 4(a): Plot the number of unique hospitals by year (using 'PRVDR_NUM' as a unique identifier)
     unique_hospitals_by_year = all_data.groupby('Year')['PRVDR_NUM'].nunique()
@@ -150,7 +151,6 @@ if data:
     plt.xlabel('Year')
     plt.ylabel('Number of Unique Hospitals')
     plt.show()
-
 ```
 
 ```{python}
@@ -168,72 +168,169 @@ if data:
     else:
         print("Some hospitals appear multiple times per year. Below are the details:")
         print(duplicates)
-
 ```
 
 ## Identify hospital closures in POS file (15 pts) (*)
 
 1. 
+```{python}
+# Convert the data type of Year from string to numeric
+all_data['Year'] = pd.to_numeric(all_data['Year'], errors='coerce')
+
+# Identify hospitals active in 2016
+active_2016 = all_data[(all_data['Year'] == 2016) & (all_data['PGM_TRMNTN_CD'] == 0)]
+
+# Initialize a list to store suspected closures
+suspected_closures = []
+
+# Check each hospital from 2016 for activity in subsequent years
+for index, row in active_2016.iterrows():
+    provider_id = row['PRVDR_NUM']
+    facility_name = row['FAC_NAME']
+    zip_code = row['ZIP_CD']
+    
+    # Get data for the provider in subsequent years
+    provider_data = all_data[(all_data['PRVDR_NUM'] == provider_id) & (all_data['Year'] > 2016)].sort_values('Year')
+    
+    # Initialize closure year as None
+    closure_year = None
+    
+    # Check each year for termination
+    for year, year_data in provider_data.groupby('Year'):
+        if year_data['PGM_TRMNTN_CD'].iloc[0] != 0:  # If the provider is terminated
+            closure_year = year
+            break
+    
+    # If the provider has been identified as closed in subsequent years, add to the list
+    if closure_year:
+        suspected_closures.append([provider_id, facility_name, zip_code, closure_year])
+
+# Convert results to DataFrame and display the number of closures
+suspected_closures_df = pd.DataFrame(suspected_closures, columns=['provider_id', 'facility_name', 'zip_code', 'suspected_closure_year'])
+print("Number of suspected closures:", len(suspected_closures_df))
+
+# Sort closures by facility_name and show top 10 for verification
+closures_sorted = suspected_closures_df.sort_values(by='facility_name')
+top_10_closures = closures_sorted[['facility_name', 'suspected_closure_year']].head(10)
+print("Top 10 suspected closures (sorted by Facility Name):")
+print(top_10_closures)
+```
+
 2. 
+```{python}
+# Sort suspected_closures_df by facility_name
+closures_sorted = suspected_closures_df.sort_values(by='facility_name')
+
+# Select only the facility_name and suspected_closure_year columns and display the top 10 rows
+top_10_closures = closures_sorted[['facility_name', 'suspected_closure_year']].head(10)
+
+# Display the result
+print(top_10_closures)
+```
+
 3. 
+```{python}
+# Find the zip code whose number of hospitals has not decreased.
+active_by_zip_year = all_data[all_data['PGM_TRMNTN_CD'] == 0].groupby(['ZIP_CD', 'Year']).size().unstack(fill_value=0)
+
+# Initialize lists to store confirmed closures and potential merger/acquisition lists
+confirmed_closures_indexes = []
+
+# Compare 2016 and 2018 to check if the number of hospitals has decreased due to the suspected closure in 2017 (A)
+A = suspected_closures_df[
+    (suspected_closures_df['suspected_closure_year'] == 2017) &
+    (suspected_closures_df['zip_code'].map(lambda z: active_by_zip_year.loc[z, 2016] > active_by_zip_year.loc[z, 2018]))
+].index.tolist()
+
+# Compare 2017 and 2019 to check if the number of hospitals has decreased due to the suspected closure in 2018 (B)
+B = suspected_closures_df[
+    (suspected_closures_df['suspected_closure_year'] == 2018) &
+    (suspected_closures_df['zip_code'].map(lambda z: active_by_zip_year.loc[z, 2017] > active_by_zip_year.loc[z, 2019]))
+].index.tolist()
+
+# Combine indices of hospitals confirmed to be closed in A and B, remove duplicates to create confirmed closures list
+confirmed_closures_indexes = list(set(A + B))
+
+# Convert confirmed closures and merger/acquisition lists to DataFrames
+confirmed_closures_df = suspected_closures_df.loc[confirmed_closures_indexes]
+merge_acquisition_df = suspected_closures_df.drop(index=confirmed_closures_indexes)
+
+# Print the result
+print("Number of confirmed closures after filtering:", len(confirmed_closures_df))
+print("Number of hospitals identified as potential mergers/acquisitions:", len(merge_acquisition_df))
+```
     a.
+      ## Among the suspected closures, 83 hospitals fit the definition of potentially being a merger/acquisition.
     b.
+      ## After correcting this, 91 hospitals have left.
     c.
+```{python}
+# Report the first 10 rows of the result by name.
+confirmed_closures_sorted_df = confirmed_closures_df.sort_values(by='facility_name', ascending=True)
+print(confirmed_closures_sorted_df[['facility_name', 'zip_code', 'suspected_closure_year']].head(10))
+```
 
 ## Download Census zip code shapefile (10 pt) 
 
 1. 
-    a.The five file types found in the downloaded dataset are .shp, .shx, .dbf, .prj, and .xml. Each 
-    type serves a specific purpose: .shp stores the geometrical shapes of geographical features, .shx acts 
-    as an index file for faster access, .dbf contains attribute data related to each feature, .prj defines 
-    the projection and coordinate system, and .xml holds metadata describing the dataset.
-
-    b.After unzipping the file, the sizes of each file type are as follows: the .shp file is approximately 
-    514 MB, the .dbf file is about 6 MB, the .shx file is 259 KB, the .prj file is 1 KB, and the .xml file 
-    is 16 KB. This indicates that the .shp file holds the most data as it stores the detailed geometrical 
-    information of geographical features.
+    a.
+    b. 
 2. 
-
-```{python}
-import geopandas as gpd
-import pandas as pd
-import matplotlib.pyplot as plt
-
-# Load the ZIP code shapefile
-shapefile_path = r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\gz_2010_us_860_00_500k\gz_2010_us_860_00_500k.shp"
-zip_gdf = gpd.read_file(shapefile_path)
-
-# Filter for Texas ZIP codes (starting with '75' or '77')
-texas_zip_gdf = zip_gdf[zip_gdf['ZCTA5'].astype(str).str.startswith(('75', '77'))]
-
-# Load the cleaned POS hospital data for 2016
-pos_data_path = r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\pos2016.csv.csv"
-pos_df = pd.read_csv(pos_data_path, dtype={'ZIP_CD': str}, low_memory=False)
-
-# Filter POS data for Texas ZIP codes (using ZIP_CD)
-texas_pos_df = pos_df[pos_df['ZIP_CD'].astype(str).str.startswith(('75', '77'))]
-
-# Calculate the number of hospitals per ZIP code in Texas
-hospital_counts = texas_pos_df['ZIP_CD'].value_counts().reset_index()
-hospital_counts.columns = ['ZIP_CD', 'Hospital_Count']
-
-# Merge with Texas ZIP shapefile data
-texas_zip_gdf = texas_zip_gdf.merge(hospital_counts, left_on='ZCTA5', right_on='ZIP_CD', how='left').fillna(0)
-
-# Plot choropleth of the number of hospitals by ZIP code in Texas
-fig, ax = plt.subplots(1, 1, figsize=(10, 10))
-texas_zip_gdf.plot(column='Hospital_Count', cmap='OrRd', linewidth=0.8, ax=ax, edgecolor='0.8', legend=True)
-plt.title("Number of Hospitals by ZIP Code in Texas (2016)")
-plt.xlabel("Longitude")
-plt.ylabel("Latitude")
-plt.show()
-```
-
 
 ## Calculate zip code’s distance to the nearest hospital (20 pts) (*)
 
 1. 
+1-1. The dimensions of the dimensions of the resulting GeoDataFrame is 33,120 rows and 6 columns.
+1-2. The meaning of each columns is as follow:
+- GEO_ID : A unique identifier for each ZIP code area
+- ZCTA5 : ZIP Code Tabulation Area (ZCTA), a 5-digit code corresponding to the ZIP code
+- NAME : Name of the ZCTA (usually the same as ZCTA5)
+- LSAD : Legal/Statistical Area Description, indicating the legal or statistical description of the area
+- CENSUSAREA : The size of the ZIP code area, often used in census data
+- geometry : The centroid coordinates (latitude and longitude) of the ZIP code area
+
+```{python}
+import geopandas as gpd
+from shapely.geometry import Point
+
+# Load ZIP code shapefile
+shapefile_path = "/Users/sohyunlim/Desktop/python-ps4-shilm/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp"
+gdf = gpd.read_file(shapefile_path)
+
+# Calculate centroids for each ZIP code
+zips_all_centroids = gdf.copy()
+zips_all_centroids['geometry'] = zips_all_centroids.geometry.centroid
+
+# Display dimensions and column explanations
+print("Dimensions of zips_all_centroids:", zips_all_centroids.shape)
+print("Columns in zips_all_centroids:", zips_all_centroids.columns)
+```
+
 2. 
+2-1. Unique zip codes in zips_texas_centroids are 1,935.
+2-2. Unique zip codes in zips_texas_borderstates_centroids are 4,057.
+```{python}
+# Filter ZIP codes for Texas (prefix: 750-799, including 733)
+zips_texas_centroids = zips_all_centroids[
+    zips_all_centroids['ZCTA5'].astype(str).str[:3].astype(int).between(750, 799) |
+    (zips_all_centroids['ZCTA5'].astype(str).str[:3] == '733')
+]
+
+# Filter ZIP codes for Texas and bordering states (NM: 870-885, OK: 730-749 (except 733), AR: 716-729, LA: 700-714)
+zips_texas_borderstates_centroids = zips_all_centroids[
+    zips_all_centroids['ZCTA5'].astype(str).str[:3].astype(int).between(700, 714) |  # LA
+    zips_all_centroids['ZCTA5'].astype(str).str[:3].astype(int).between(716, 729) |  # AR
+    (zips_all_centroids['ZCTA5'].astype(str).str[:3].astype(int).between(730, 749) & 
+     (zips_all_centroids['ZCTA5'].astype(str).str[:3] != '733')) |                   # OK excluding 733
+    zips_all_centroids['ZCTA5'].astype(str).str[:3].astype(int).between(870, 885) |  # NM
+    zips_all_centroids['ZCTA5'].astype(str).str[:3].astype(int).between(750, 799)    # TX including 750-799
+]
+
+# Print unique ZIP code counts
+print("Unique ZIP codes in Texas:", zips_texas_centroids['ZCTA5'].nunique())
+print("Unique ZIP codes in Texas and bordering states:", zips_texas_borderstates_centroids['ZCTA5'].nunique())
+```
+
 3. 
 4. 
     a.
