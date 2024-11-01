@@ -65,7 +65,6 @@ the selected variables include:
 import pandas as pd
 file_path = r"/Users/sohyunlim/Desktop/python-ps4-shilm/pos2016.csv.csv"
 data = pd.read_csv(file_path)
-
 ```
     a.
 ```{python}
@@ -302,8 +301,8 @@ print("Columns in zips_all_centroids:", zips_all_centroids.columns)
 ```
 
 2. 
-2-1. Unique zip codes in zips_texas_centroids are 1,935.
-2-2. Unique zip codes in zips_texas_borderstates_centroids are 4,057.
+- Unique zip codes in zips_texas_centroids are 1,935.
+- Unique zip codes in zips_texas_borderstates_centroids are 4,057.
 ```{python}
 # Filter ZIP codes for Texas (prefix: 750-799, including 733)
 zips_texas_centroids = zips_all_centroids[
@@ -327,19 +326,183 @@ print("Unique ZIP codes in Texas and bordering states:", zips_texas_borderstates
 ```
 
 3. 
+- I used inner merge to ensure that zips_withhospital_centroids contains only the ZIP codes in Texas and bordering states that had at least one hospital in 2016.
+- Variable for Merging: I used ZIP_CD hospitals_2016 and ZCTA5 in zips_texas_borderstates_centroids, because they are representing zip codes that is useful to merge.
+
+```{python}
+## Filter hospital data for active hospitals in 2016
+hospitals_2016 = all_data[(all_data['Year'] == 2016) & (all_data['PGM_TRMNTN_CD'] == 0)]
+
+# Extract unique ZIP codes where there is a hospital in 2016
+zip_codes_with_hospitals_2016 = hospitals_2016['ZIP_CD'].unique()
+
+## Ensure data format consistency - Convert ZIP codes to string and remove decimals
+# Convert ZIP_CD in hospitals_2016 to string format and remove decimals
+hospitals_2016.loc[:, 'ZIP_CD'] = hospitals_2016['ZIP_CD'].astype(int).astype(str)
+
+# Convert ZCTA5 in zips_texas_borderstates_centroids to string format for consistency
+zips_texas_borderstates_centroids.loc[:, 'ZCTA5'] = zips_texas_borderstates_centroids['ZCTA5'].astype(str)
+
+# Convert zip_codes_with_hospitals_2016 to string format
+zip_codes_with_hospitals_2016 = [str(int(zip_code)) for zip_code in zip_codes_with_hospitals_2016]
+
+## Filter and verify results
+# Check if there are any matching ZIP codes between zip_codes_with_hospitals_2016 and zips_texas_borderstates_centroids['ZCTA5']
+
+common_zip_codes = set(zip_codes_with_hospitals_2016).intersection(set(zips_texas_borderstates_centroids['ZCTA5']))
+print("Number of common ZIP codes:", len(common_zip_codes))
+print("Sample common ZIP codes:", list(common_zip_codes)[:10])
+
+# If matching ZIP codes are found, perform filtering
+if common_zip_codes:
+    zips_withhospital_centroids = zips_texas_borderstates_centroids[
+        zips_texas_borderstates_centroids['ZCTA5'].isin(common_zip_codes)
+    ]
+else:
+    print("No matching ZIP codes found between hospitals_2016 and zips_texas_borderstates_centroids.")
+    
+# Print the result
+print("Dimensions of zips_withhospital_centroids:", zips_withhospital_centroids.shape)
+print(zips_withhospital_centroids.head())
+```
+
 4. 
     a.
+It took approximately 0.04 seconds.
+```{python}
+import geopandas as gpd
+import time
+
+# Select a subset of 10 ZIP codes for testing
+subset_texas_zips = zips_texas_centroids.head(10)
+
+# Start timing
+start_time = time.time()
+
+# Calculate distance for each ZIP in the subset to the nearest ZIP with a hospital
+nearest_hospital_test = gpd.sjoin_nearest(
+    subset_texas_zips,                  
+    zips_withhospital_centroids,        
+    how="left",                         
+    distance_col="distance"             
+)
+
+# Check end time and Calculate time taken
+end_time = time.time()
+test_time = end_time - start_time
+
+# Print the result
+print(f"Time taken for 10 ZIP code test: {test_time:.2f} seconds")
+```
+
     b.
+Since the full dataset (448 entries) is 4.5 times larger than the sample dataset (10), I expected it would take approximately 0.2 seconds (0.04 * 4.5). However, it actually only took 0.07 seconds. This is likely because the dataset size is relatively small, and the distance calculations are efficiently vectorized.
+```{python}
+# Start timing for the full dataset
+start_time_full = time.time()
+
+# Calculate distance for each ZIP in the Texas to the nearest ZIP with a hospital
+nearest_hospital_full = gpd.sjoin_nearest(
+    zips_texas_centroids,               
+    zips_withhospital_centroids,         
+    how="left",                          
+    distance_col="distance"              
+)
+
+# Check end time and Calculate time taken
+end_time_full = time.time()
+total_time_full = end_time_full - start_time_full
+
+# Print the result
+print(f"Total time taken for full calculation: {total_time_full:.2f} seconds")
+print(nearest_hospital_full[['ZCTA5_left', 'ZCTA5_right', 'distance']].head()) 
+```
+
+    c.
+Unit: degree
+```{python}
+# Check .prj file to find the unit : degree
+with open("/Users/sohyunlim/Desktop/python-ps4-shilm/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.prj", "r") as prj_file:
+    prj_content = prj_file.read()
+    print(prj_content)
+```
+```{python}
+import numpy as np
+
+# Calculate average latitude
+average_latitude = zips_texas_centroids.geometry.y.mean()
+
+# Conversion factors for latitude and longitude differences in miles
+miles_per_degree_latitude = 69.0
+miles_per_degree_longitude = 69.0 * np.cos(np.radians(average_latitude))
+
+# Convert distances to miles based on latitude and longitude
+nearest_hospital_full['distance_miles'] = nearest_hospital_full['distance'] * (
+    miles_per_degree_latitude if 'latitude' in 'distance' else miles_per_degree_longitude
+)
+
+# Print a sample of the converted distances to verify
+print("Average latitude for conversion:", average_latitude)
+print(nearest_hospital_full[['ZCTA5_left', 'ZCTA5_right', 'distance', 'distance_miles']].head())
+```
+
 5. 
     a.
+The unit is "mile" because we already converted the unit of the dataset from "degree" to "mile" in Q4.
+```{python}
+# Calculate the average distance to the nearest hospital for Texas ZIP codes
+average_distance_miles = nearest_hospital_full['distance_miles'].mean()
+print(f"Average distance to the nearest hospital in Texas (in miles): {average_distance_miles:.2f} miles")
+```
+
     b.
+The average distance to the nearest hospital for each ZIP code in Texas is 12.45 miles. This is reasonable compared to the U.S. national average of around 10 miles, given Texas's vast rural areas and lower population density outside major cities.
+
     c.
-    
+```{python}
+import geopandas as gpd
+import matplotlib.pyplot as plt
+
+# Filter for Texas ZIP code range
+texas_zip_codes = gdf[
+    (gdf['ZCTA5'].astype(str).str[:3].astype(int).between(750, 799)) |
+    (gdf['ZCTA5'].astype(str).str.startswith("733"))
+]
+
+# Transform to EPSG:4269 to match Texas ZIP codes with hospital distance data
+texas_zip_codes = texas_zip_codes.to_crs(epsg=4269)
+nearest_hospital_full = nearest_hospital_full.to_crs(epsg=4269)
+
+# Plot the map
+fig, ax = plt.subplots(figsize=(10, 8))
+
+# Plot Texas ZIP code boundaries as the background
+texas_zip_codes.plot(ax=ax, color='lightgrey', edgecolor='black')
+
+# Plot hospital distance data for each Texas ZIP code with color mapping
+nearest_hospital_full.plot(
+    column='distance_miles',
+    cmap='coolwarm',
+    legend=True,
+    ax=ax,
+    legend_kwds={'label': "Distance to Nearest Hospital (Miles)"}
+)
+
+# Add title and axis labels
+plt.title("Distance to Nearest Hospital for Each ZIP Code in Texas")
+plt.xlabel("Longitude")
+plt.ylabel("Latitude")
+plt.show()
+```
+
 ## Effects of closures on access in Texas (15 pts)
 
-1. 
-2. 
+
 3. 
 4. 
 
 ## Reflecting on the exercise (10 pts) 
+
+1. 
+2. 
+Using provider_id instead of ZIP codes could provide a more accurate assessment of hospital accessibility. The ZIP code approach only considers hospital availability within boundaries, which may overlook accessibility in nearby ZIP codes. In contrast, tracking by provider_id allows us to accurately monitor each hospital’s location and status, thus capturing changes in accessibility that extend beyond ZIP code boundaries.
