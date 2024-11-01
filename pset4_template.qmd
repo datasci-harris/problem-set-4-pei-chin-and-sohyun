@@ -173,6 +173,7 @@ if data:
 ## Identify hospital closures in POS file (15 pts) (*)
 
 1. 
+There are 174 hospitals that fit the definition of suspected closure.
 ```{python}
 # Convert the data type of Year from string to numeric
 all_data['Year'] = pd.to_numeric(all_data['Year'], errors='coerce')
@@ -208,12 +209,6 @@ for index, row in active_2016.iterrows():
 # Convert results to DataFrame and display the number of closures
 suspected_closures_df = pd.DataFrame(suspected_closures, columns=['provider_id', 'facility_name', 'zip_code', 'suspected_closure_year'])
 print("Number of suspected closures:", len(suspected_closures_df))
-
-# Sort closures by facility_name and show top 10 for verification
-closures_sorted = suspected_closures_df.sort_values(by='facility_name')
-top_10_closures = closures_sorted[['facility_name', 'suspected_closure_year']].head(10)
-print("Top 10 suspected closures (sorted by Facility Name):")
-print(top_10_closures)
 ```
 
 2. 
