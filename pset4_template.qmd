@@ -887,5 +887,8 @@ merged or changed names, and employ more detailed data when available. Additiona
  anomalous data entries can help mitigate errors. These steps can reduce misclassification and enhance 
  the reliability of hospital closure identification.
 2. 
-Using provider_id instead of ZIP codes could provide a more accurate assessment of hospital accessibility. The ZIP code approach only considers hospital availability within boundaries, which may overlook accessibility in nearby ZIP codes. In contrast, tracking by provider_id allows us to accurately monitor each hospital’s location and status, thus capturing changes in accessibility that extend beyond ZIP code boundaries.
+Using provider_id instead of ZIP codes could provide a more accurate assessment of hospital accessibility. 
+The ZIP code approach only considers hospital availability within boundaries, which may overlook accessibility
+in nearby ZIP codes. In contrast, tracking by provider_id allows us to accurately monitor each hospital’s 
+location and status, thus capturing changes in accessibility that extend beyond ZIP code boundaries.
 
