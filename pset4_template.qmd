@@ -624,23 +624,15 @@ print(nearest_hospital_full[['ZCTA5_left', 'ZCTA5_right', 'distance', 'distance_
 import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
-import numpy as np
-from shapely.geometry import Point
-import os
-import time
 
 # Load the Texas ZIP codes shapefile
 zip_shapefile_path = (
-    r"C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\gz_2010_us_860_00_500k\gz_2010_us_860_00_500k.shp"
+    r"/Users/sohyunlim/Desktop/python-ps4-shilm/gz_2010_us_860_00_500k/gz_2010_us_860_00_500k.shp"
 )
 zip_gdf = gpd.read_file(zip_shapefile_path)
 
 # Filter for Texas ZIP codes (starting with '75' or '77')
 texas_zip_gdf = zip_gdf[zip_gdf['ZCTA5'].astype(str).str.startswith(('75', '77'))].copy()
-
-# Load the confirmed hospital closures data
-confirmed_closures_path = r'C:\Users\Pei-Chin\Desktop\新增資料夾\hi Dropbox\Lu Pei-Chin\confirmed_closures.csv'
-confirmed_closures_df = pd.read_csv(confirmed_closures_path)
 
 # Ensure 'zip_code' column is in string format
 confirmed_closures_df['zip_code'] = confirmed_closures_df['zip_code'].astype(str)
@@ -662,16 +654,61 @@ affected_zip_gdf = texas_zip_gdf.merge(
     closures_by_zip, left_on='ZCTA5', right_on='zip_code', how='left'
 ).fillna(0)
 
-# Add 'affect' column for visualization purposes
+# Set default impact as 'Not Affected'
+affected_zip_gdf['affect'] = 'Not Affected'
 affected_zip_gdf.loc[affected_zip_gdf['closure_count'] > 0, 'affect'] = 'Directly Affected'
-affected_zip_gdf['affect'] = affected_zip_gdf['affect'].fillna('Not Affected')
 
-# Plot the choropleth map
+# Define directly affected areas and create a buffer
+directly_affected_gdf = affected_zip_gdf[affected_zip_gdf['affect'] == 'Directly Affected'].copy()
+
+# Convert CRS to one that supports distance measurement (EPSG:3857)
+texas_zip_gdf = texas_zip_gdf.to_crs(epsg=3857)
+directly_affected_gdf = directly_affected_gdf.to_crs(epsg=3857)
+
+# Create a 10-mile buffer around directly affected ZIP codes
+directly_affected_gdf['buffer'] = directly_affected_gdf.buffer(16093.4)  # 10 miles in meters
+
+# Set the buffer as the active geometry for spatial join
+directly_affected_gdf = directly_affected_gdf.set_geometry('buffer')
+
+# Perform the spatial join to find indirectly affected ZIP codes within 10 miles of directly affected ones
+indirectly_affected_gdf = gpd.sjoin(texas_zip_gdf, directly_affected_gdf[['buffer']], how='inner', op='intersects')
+indirectly_affected_zip_codes = indirectly_affected_gdf['ZCTA5'].unique()
+
+# Reset geometry back to the original for plotting purposes
+affected_zip_gdf = affected_zip_gdf.set_geometry('geometry')
+
+# Add 'affect' categories based on the impact (direct and indirect)
+affected_zip_gdf['affect'] = 'Not Affected'  # Default to 'Not Affected'
+affected_zip_gdf.loc[affected_zip_gdf['closure_count'] > 0, 'affect'] = 'Directly Affected'
+affected_zip_gdf.loc[
+    (affected_zip_gdf['ZCTA5'].isin(indirectly_affected_zip_codes)) &
+    (affected_zip_gdf['affect'] != 'Directly Affected'),
+    'affect'
+] = 'Indirectly Affected'
+
+# Define a softer color dictionary for each category
+color_dict = {
+    'Not Affected': '#D3D3D3',       # Light Gray
+    'Directly Affected': '#FFD580',  # Softened Yellow
+    'Indirectly Affected': '#CD7054' # Softened Red
+}
+
+# Map colors to each category
+affected_zip_gdf['color'] = affected_zip_gdf['affect'].map(color_dict)
+
+# Plot the map with custom colors and thinner boundaries
 fig, ax = plt.subplots(figsize=(10, 10))
 affected_zip_gdf.plot(
-    column='closure_count', cmap='Reds', linewidth=0.8, ax=ax, edgecolor='0.8', legend=True
+    color=affected_zip_gdf['color'], linewidth=0.5, edgecolor='0.6', ax=ax  # thinner boundary lines
 )
-plt.title("Texas ZIP Codes Directly Affected by Hospital Closures (2016-2019)")
+
+# Add a custom legend for each category with thinner legend markers
+for category, color in color_dict.items():
+    ax.plot([], [], color=color, label=category, markersize=7, linestyle="None", marker="o")
+ax.legend(title="Impact of Hospital Closures")
+
+plt.title("Impact of Hospital Closures on Texas ZIP Codes")
 plt.xlabel("Longitude")
 plt.ylabel("Latitude")
 plt.show()
