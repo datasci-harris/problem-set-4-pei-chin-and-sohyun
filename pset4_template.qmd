@@ -27,12 +27,12 @@ Please refer to the minilesson on code style
 ## Submission Steps (10 pts)
 1. This problem set is a paired problem set.
 2. Play paper, scissors, rock to determine who goes first. Call that person *Partner 1*.
-    - Partner 1 (name and cnet ID):
+    - Partner 1 (name and cnet ID):Pei-Chin Lu and peichin
     - Partner 2 (name and cnet ID): Sohyun Lim / shlim
 3. Partner 1 will accept the `ps4` and then share the link it creates with their partner. You can only share it with one partner so you will not be able to change it after your partner has accepted. 
-4. "This submission is our work alone and complies with the 30538 integrity policy." Add your initials to indicate your agreement: \*\*\_\_\*\* \*\*\_\_\*\*
+4. "This submission is our work alone and complies with the 30538 integrity policy." **PL** **SL**
 5. "I have uploaded the names of anyone else other than my partner and I worked with on the problem set **[here](https://docs.google.com/forms/d/185usrCREQaUbvAXpWhChkjghdGgmAZXA3lPWpXLLsts/edit)**"  (1 point)
-6. Late coins used this pset: \*\*\_\_\*\* Late coins left after submission: \*\*\_\_\*\*
+6. Late coins used this pset: \*\*\_0\_\*\* Late coins left after submission: \*\*\0_\_\*\*
 7. Knit your `ps4.qmd` to an PDF file to make `ps4.pdf`, 
     * The PDF should not be more than 25 pages. Use `head()` and re-size figures when appropriate. 
 8. (Partner 1): push  `ps4.qmd` and `ps4.pdf` to your github repo.
@@ -878,17 +878,14 @@ plt.show()
 
 ```
 ## Reflecting on the exercise (10 pts) 
-
-1.The "first-pass" method for identifying hospital closures has limitations, including potential 
+1. 
+The "first-pass" method for identifying hospital closures has limitations, including potential 
 misclassifications due to missing data, inconsistencies across sources, and possible confusion with 
 mergers or name changes. To improve accuracy, we can cross-reference multiple data sources to verify 
 closures, use a multi-year timeframe to confirm permanent closures, track facilities that might have 
 merged or changed names, and employ more detailed data when available. Additionally, flagging and reviewing
  anomalous data entries can help mitigate errors. These steps can reduce misclassification and enhance 
  the reliability of hospital closure identification.
-=======
-
-1. 
 2. 
 Using provider_id instead of ZIP codes could provide a more accurate assessment of hospital accessibility. The ZIP code approach only considers hospital availability within boundaries, which may overlook accessibility in nearby ZIP codes. In contrast, tracking by provider_id allows us to accurately monitor each hospital’s location and status, thus capturing changes in accessibility that extend beyond ZIP code boundaries.
->>>>>>> 0e4e108a296ca1920cbdaa0ec7dcb6032081f4a2
+
